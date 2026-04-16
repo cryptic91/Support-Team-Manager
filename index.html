@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support Team Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-wrapper">
+
+    <!-- ═══════════════════════════════════════════
+         SIDEBAR
+    ═══════════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="logo-name">SupportTrack</span>
+          <span class="logo-sub">Team Manager</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-section="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-section="timeline">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>Timeline</span>
+        </button>
+        <button class="nav-item" data-section="calendar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span>Calendar</span>
+        </button>
+        <button class="nav-item" data-section="team">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Team</span>
+        </button>
+        <button class="nav-item" data-section="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M4.93 4.93a10 10 0 0 1 14.14 14.14"/>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-clock">
+        <div class="clock-time" id="liveClock">00:00:00</div>
+        <div class="clock-date" id="liveDate">—</div>
+        <div class="online-badge">
+          <span class="pulse-dot"></span>
+          <span id="onlineCount">0</span> online
+        </div>
+      </div>
+    </aside>
+
+    <!-- ═══════════════════════════════════════════
+         MAIN CONTENT
+    ═══════════════════════════════════════════ -->
+    <div class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="menu-toggle" id="menuToggle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <h1 class="page-title" id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="header-right">
+          <button class="btn-primary" id="openCheckinBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Check In / Out
+          </button>
+          <button class="btn-icon" id="addMemberBtn" title="Add Team Member">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/>
+              <line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="content-area">
+
+        <!-- ─────────────────────────────────────
+             DASHBOARD SECTION
+        ───────────────────────────────────── -->
+        <section class="section active" id="section-dashboard">
+          <div class="stats-row">
+            <div class="stat-card stat-working">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <div class="stat-value" id="statWorking">0</div>
+                <div class="stat-label">Working</div>
+              </div>
+              <div class="stat-bar" style="--clr: var(--status-working)"></div>
+            </div>
+            <div class="stat-card stat-break">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="10" y1="15" x2="10" y2="9"/>
+                  <line x1="14" y1="15" x2="14" y2="9"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <div class="stat-value" id="statBreak">0</div>
+                <div class="stat-label">On Break</div>
+              </div>
+              <div class="stat-bar" style="--clr: var(--status-break)"></div>
+            </div>
+            <div class="stat-card stat-leave">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <div class="stat-value" id="statLeave">0</div>
+                <div class="stat-label">On Leave</div>
+              </div>
+              <div class="stat-bar" style="--clr: var(--status-leave)"></div>
+            </div>
+            <div class="stat-card stat-offline">
+              <div class="stat-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+              </div>
+              <div class="stat-body">
+                <div class="stat-value" id="statOffline">0</div>
+                <div class="stat-label">Offline</div>
+              </div>
+              <div class="stat-bar" style="--clr: var(--status-offline)"></div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="glass-card panel-team-quick">
+              <div class="panel-header">
+                <h2>Team Status</h2>
+                <span class="panel-badge" id="teamCountBadge">0 members</span>
+              </div>
+              <div class="quick-team-list" id="quickTeamList"></div>
+            </div>
+
+            <div class="glass-card panel-activity">
+              <div class="panel-header">
+                <h2>Activity Feed</h2>
+                <button class="btn-text" id="clearActivityBtn">Clear</button>
+              </div>
+              <div class="activity-list" id="activityList">
+                <div class="empty-state">No activity yet today</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────
+             TIMELINE SECTION
+        ───────────────────────────────────── -->
+        <section class="section" id="section-timeline">
+          <div class="glass-card timeline-card">
+            <div class="panel-header">
+              <h2>24-Hour Shift Timeline</h2>
+              <div class="timeline-date-nav">
+                <button class="btn-icon-sm" id="tl-prev-day">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <span class="timeline-date-label" id="tlDateLabel">Today</span>
+                <button class="btn-icon-sm" id="tl-next-day">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="timeline-container" id="timelineContainer">
+              <div class="tl-grid">
+                <div class="tl-member-col">
+                  <div class="tl-header-cell">Member</div>
+                  <div id="tlMemberLabels"></div>
+                </div>
+                <div class="tl-tracks-wrapper">
+                  <div class="tl-hour-labels" id="tlHourLabels"></div>
+                  <div class="tl-tracks" id="tlTracks">
+                    <div class="tl-current-time" id="tlCurrentTime"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:var(--status-working)"></span>Working</div>
+              <div class="legend-item"><span class="legend-dot" style="background:var(--status-break)"></span>Break</div>
+              <div class="legend-item"><span class="legend-dot" style="background:var(--status-leave)"></span>Leave</div>
+              <div class="legend-item"><span class="legend-dot" style="background:rgba(255,255,255,0.08); border: 1px dashed rgba(255,255,255,0.2)"></span>Scheduled</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────
+             CALENDAR SECTION
+        ───────────────────────────────────── -->
+        <section class="section" id="section-calendar">
+          <div class="calendar-layout">
+            <div class="glass-card calendar-card">
+              <div class="calendar-nav">
+                <button class="btn-icon-sm" id="calPrevMonth">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h2 class="cal-month-title" id="calMonthTitle">—</h2>
+                <button class="btn-icon-sm" id="calNextMonth">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+              </div>
+              <div class="cal-day-names">
+                <span>Sun</span><span>Mon</span><span>Tue</span>
+                <span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+            </div>
+
+            <div class="glass-card day-detail-card" id="dayDetailCard">
+              <div class="panel-header">
+                <h2 id="dayDetailTitle">Select a day</h2>
+              </div>
+              <div class="day-shifts-list" id="dayShiftsList">
+                <div class="empty-state">Click a calendar day to see shifts</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ─────────────────────────────────────
+             TEAM SECTION
+        ───────────────────────────────────── -->
+        <section class="section" id="section-team">
+          <div class="team-filter-bar">
+            <div class="filter-tabs">
+              <button class="filter-tab active" data-filter="all">All</button>
+              <button class="filter-tab" data-filter="working">Working</button>
+              <button class="filter-tab" data-filter="break">On Break</button>
+              <button class="filter-tab" data-filter="leave">On Leave</button>
+              <button class="filter-tab" data-filter="offline">Offline</button>
+            </div>
+          </div>
+          <div class="team-grid" id="teamGrid"></div>
+        </section>
+
+        <!-- ─────────────────────────────────────
+             SETTINGS SECTION
+        ───────────────────────────────────── -->
+        <section class="section" id="section-settings">
+          <div class="settings-layout">
+
+            <!-- Discord Settings -->
+            <div class="glass-card settings-card">
+              <div class="settings-card-header">
+                <div class="settings-icon discord-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Discord Notifications</h2>
+                  <p>Send team status updates to a Discord channel</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="discordEnabled" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="settings-fields">
+                <div class="field-group">
+                  <label>Webhook URL</label>
+                  <input type="text" id="discordWebhook" placeholder="https://discord.com/api/webhooks/..." class="field-input" />
+                </div>
+                <div class="field-group">
+                  <label>Role to Mention (optional)</label>
+                  <input type="text" id="discordRole" placeholder="@team or role ID" class="field-input" />
+                </div>
+                <div class="notify-checkboxes">
+                  <label class="check-label"><input type="checkbox" id="notifyCheckin" checked /> Notify on Check-In</label>
+                  <label class="check-label"><input type="checkbox" id="notifyCheckout" checked /> Notify on Check-Out</label>
+                  <label class="check-label"><input type="checkbox" id="notifyBreak" checked /> Notify on Break</label>
+                  <label class="check-label"><input type="checkbox" id="notifyLeave" checked /> Notify on Leave</label>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn-secondary" id="testDiscordBtn">Test Notification</button>
+                  <button class="btn-primary" id="saveDiscordBtn">Save Discord Settings</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Firebase Settings -->
+            <div class="glass-card settings-card">
+              <div class="settings-card-header">
+                <div class="settings-icon firebase-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3.89 15.673L6.255.461A.542.542 0 0 1 7.27.288l2.543 4.771zm16.794 3.692l-2.25-14a.54.54 0 0 0-.919-.295L3.316 19.365l7.856 4.427a1.621 1.621 0 0 0 1.588 0zM14.3 7.147l-1.818-3.482a.542.542 0 0 0-.96 0L3.53 17.984z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Firebase Integration</h2>
+                  <p>Real-time sync across all devices</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="firebaseEnabled" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="settings-fields">
+                <div class="firebase-grid">
+                  <div class="field-group">
+                    <label>API Key</label>
+                    <input type="text" id="fbApiKey" placeholder="AIzaSy..." class="field-input" />
+                  </div>
+                  <div class="field-group">
+                    <label>Auth Domain</label>
+                    <input type="text" id="fbAuthDomain" placeholder="project.firebaseapp.com" class="field-input" />
+                  </div>
+                  <div class="field-group">
+                    <label>Database URL</label>
+                    <input type="text" id="fbDatabaseURL" placeholder="https://project-default-rtdb.firebaseio.com" class="field-input" />
+                  </div>
+                  <div class="field-group">
+                    <label>Project ID</label>
+                    <input type="text" id="fbProjectId" placeholder="my-project-id" class="field-input" />
+                  </div>
+                  <div class="field-group">
+                    <label>Storage Bucket</label>
+                    <input type="text" id="fbStorageBucket" placeholder="project.appspot.com" class="field-input" />
+                  </div>
+                  <div class="field-group">
+                    <label>App ID</label>
+                    <input type="text" id="fbAppId" placeholder="1:123456:web:abc123" class="field-input" />
+                  </div>
+                </div>
+                <div class="settings-actions">
+                  <button class="btn-secondary" id="testFirebaseBtn">Test Connection</button>
+                  <button class="btn-primary" id="saveFirebaseBtn">Save & Connect</button>
+                </div>
+                <div class="firebase-status" id="firebaseStatus"></div>
+              </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="glass-card settings-card">
+              <div class="settings-card-header">
+                <div class="settings-icon data-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2>Data Management</h2>
+                  <p>Export, import, or reset tracker data</p>
+                </div>
+              </div>
+              <div class="settings-fields">
+                <div class="settings-actions">
+                  <button class="btn-secondary" id="exportDataBtn">Export JSON</button>
+                  <button class="btn-secondary" id="importDataBtn">Import JSON</button>
+                  <input type="file" id="importFileInput" accept=".json" style="display:none" />
+                  <button class="btn-danger" id="resetDataBtn">Reset All Data</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div><!-- end content-area -->
+    </div><!-- end main-content -->
+  </div><!-- end app-wrapper -->
+
+  <!-- ═══════════════════════════════════════════
+       CHECK-IN / CHECK-OUT MODAL
+  ═══════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="checkinOverlay">
+    <div class="modal glass-card" id="checkinModal">
+      <div class="modal-header">
+        <h2>Check In / Out</h2>
+        <button class="btn-icon modal-close" id="closeCheckinModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="field-group">
+          <label>Team Member</label>
+          <select class="field-input" id="checkinMemberSelect">
+            <option value="">Select a member...</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Action</label>
+          <div class="action-tabs" id="actionTabs">
+            <button class="action-tab active" data-action="checkin">Check In</button>
+            <button class="action-tab" data-action="break">Set Break</button>
+            <button class="action-tab" data-action="leave">Set Leave</button>
+            <button class="action-tab" data-action="checkout">Check Out</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Note (optional)</label>
+          <input type="text" class="field-input" id="checkinNote" placeholder="e.g. Working from home..." />
+        </div>
+        <div class="selected-member-preview" id="memberPreview" style="display:none">
+          <div class="preview-avatar" id="previewAvatar"></div>
+          <div class="preview-info">
+            <span id="previewName"></span>
+            <span id="previewRole"></span>
+            <span class="status-badge" id="previewStatus"></span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelCheckinBtn">Cancel</button>
+        <button class="btn-primary" id="confirmCheckinBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ADD MEMBER MODAL
+  ═══════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="addMemberOverlay">
+    <div class="modal glass-card" id="addMemberModal">
+      <div class="modal-header">
+        <h2>Add Team Member</h2>
+        <button class="btn-icon modal-close" id="closeAddMemberModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <div class="field-group">
+            <label>Full Name</label>
+            <input type="text" class="field-input" id="newMemberName" placeholder="e.g. Alex Rivera" />
+          </div>
+          <div class="field-group">
+            <label>Role</label>
+            <input type="text" class="field-input" id="newMemberRole" placeholder="e.g. Senior Support" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label>Shift Start (hour, 0-23)</label>
+            <input type="number" class="field-input" id="newShiftStart" min="0" max="23" value="9" />
+          </div>
+          <div class="field-group">
+            <label>Shift End (hour, 0-23)</label>
+            <input type="number" class="field-input" id="newShiftEnd" min="0" max="24" value="17" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Work Days</label>
+          <div class="day-picker" id="dayPicker">
+            <button class="day-btn" data-day="0">Sun</button>
+            <button class="day-btn active" data-day="1">Mon</button>
+            <button class="day-btn active" data-day="2">Tue</button>
+            <button class="day-btn active" data-day="3">Wed</button>
+            <button class="day-btn active" data-day="4">Thu</button>
+            <button class="day-btn active" data-day="5">Fri</button>
+            <button class="day-btn" data-day="6">Sat</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Color</label>
+          <div class="color-picker" id="colorPicker">
+            <button class="color-btn active" data-color="#6366f1" style="background:#6366f1"></button>
+            <button class="color-btn" data-color="#10b981" style="background:#10b981"></button>
+            <button class="color-btn" data-color="#f59e0b" style="background:#f59e0b"></button>
+            <button class="color-btn" data-color="#ef4444" style="background:#ef4444"></button>
+            <button class="color-btn" data-color="#ec4899" style="background:#ec4899"></button>
+            <button class="color-btn" data-color="#06b6d4" style="background:#06b6d4"></button>
+            <button class="color-btn" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+            <button class="color-btn" data-color="#f97316" style="background:#f97316"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelAddMemberBtn">Cancel</button>
+        <button class="btn-primary" id="confirmAddMemberBtn">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Firebase SDKs (uncomment when Firebase config is provided in Settings) -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script> -->
+  <!-- <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script> -->
+
+  <script src="app.js"></script>
+</body>
+</html>
