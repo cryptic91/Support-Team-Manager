@@ -194,7 +194,12 @@
             <div class="glass-card panel-activity">
               <div class="panel-header">
                 <h2>Activity Feed</h2>
-                <button class="btn-text" id="clearActivityBtn">Clear</button>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <select class="field-input activity-filter-select" id="activityMemberFilter">
+                    <option value="">All members</option>
+                  </select>
+                  <button class="btn-text" id="clearActivityBtn">Clear</button>
+                </div>
               </div>
               <div class="activity-list" id="activityList">
                 <div class="empty-state">No activity yet today</div>
@@ -377,6 +382,10 @@
                     <input type="text" id="fbStorageBucket" placeholder="project.appspot.com" class="field-input" />
                   </div>
                   <div class="field-group">
+                    <label>Messaging Sender ID</label>
+                    <input type="text" id="fbMessagingSenderId" placeholder="123456789" class="field-input" />
+                  </div>
+                  <div class="field-group">
                     <label>App ID</label>
                     <input type="text" id="fbAppId" placeholder="1:123456:web:abc123" class="field-input" />
                   </div>
@@ -533,12 +542,78 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════
+       EDIT MEMBER MODAL
+  ═══════════════════════════════════════════ -->
+  <div class="modal-overlay hidden" id="editMemberOverlay">
+    <div class="modal glass-card" id="editMemberModal">
+      <div class="modal-header">
+        <h2>Edit Team Member</h2>
+        <button class="btn-icon modal-close" id="closeEditMemberModal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editMemberId" />
+        <div class="field-row">
+          <div class="field-group">
+            <label>Full Name</label>
+            <input type="text" class="field-input" id="editMemberName" placeholder="e.g. Alex Rivera" />
+          </div>
+          <div class="field-group">
+            <label>Role</label>
+            <input type="text" class="field-input" id="editMemberRole" placeholder="e.g. Senior Support" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label>Shift Start (hour, 0-23)</label>
+            <input type="number" class="field-input" id="editShiftStart" min="0" max="23" value="9" />
+          </div>
+          <div class="field-group">
+            <label>Shift End (hour, 0-23)</label>
+            <input type="number" class="field-input" id="editShiftEnd" min="0" max="23" value="17" />
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Work Days</label>
+          <div class="day-picker" id="editDayPicker">
+            <button class="day-btn" data-day="0">Sun</button>
+            <button class="day-btn" data-day="1">Mon</button>
+            <button class="day-btn" data-day="2">Tue</button>
+            <button class="day-btn" data-day="3">Wed</button>
+            <button class="day-btn" data-day="4">Thu</button>
+            <button class="day-btn" data-day="5">Fri</button>
+            <button class="day-btn" data-day="6">Sat</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label>Color</label>
+          <div class="color-picker" id="editColorPicker">
+            <button class="color-btn" data-color="#6366f1" style="background:#6366f1"></button>
+            <button class="color-btn" data-color="#10b981" style="background:#10b981"></button>
+            <button class="color-btn" data-color="#f59e0b" style="background:#f59e0b"></button>
+            <button class="color-btn" data-color="#ef4444" style="background:#ef4444"></button>
+            <button class="color-btn" data-color="#ec4899" style="background:#ec4899"></button>
+            <button class="color-btn" data-color="#06b6d4" style="background:#06b6d4"></button>
+            <button class="color-btn" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+            <button class="color-btn" data-color="#f97316" style="background:#f97316"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelEditMemberBtn">Cancel</button>
+        <button class="btn-primary" id="confirmEditMemberBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Firebase SDKs (uncomment when Firebase config is provided in Settings) -->
-  <!-- <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script> -->
-  <!-- <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script> -->
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
 
   <script src="app.js"></script>
 </body>

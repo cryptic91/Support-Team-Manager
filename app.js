@@ -5,6 +5,19 @@
 
 'use strict';
 
+// Tracks the last minute autoCheckShifts ran — avoids firing more than once per minute
+let _lastAutoCheckMinute = -1;
+
+// Timeline view starts at this hour (6 = 6am), spans 24h to same hour next day
+const TIMELINE_START_HOUR = 6;
+
+/* ─────────────────────────────────────────────────────────────
+   XSS SANITISATION HELPER
+───────────────────────────────────────────────────────────── */
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 /* ─────────────────────────────────────────────────────────────
    1. CONFIGURATION
 ───────────────────────────────────────────────────────────── */
@@ -34,46 +47,76 @@ const CONFIG = {
    2. DEFAULT TEAM DATA
 ───────────────────────────────────────────────────────────── */
 const DEFAULT_TEAM = [
+  // ── Day shifts ──────────────────────────────────────────────
   {
-    id: 'tm001', name: 'Alex Rivera',   role: 'Support Lead',
-    initials: 'AR', color: '#6366f1',
-    status: 'working', checkInTime: null, checkOutTime: null,
-    shift: { start: 9, end: 17, days: [1,2,3,4,5] },
-    totalMinutesToday: 0,
-  },
-  {
-    id: 'tm002', name: 'Jordan Lee',    role: 'Senior Support',
-    initials: 'JL', color: '#10b981',
+    id: 'tm001', name: 'Rakib',       role: 'Support Engineer (Admin)',
+    initials: 'RK', color: '#0ea5e9',   // sky blue
     status: 'offline', checkInTime: null, checkOutTime: null,
-    shift: { start: 8, end: 16, days: [1,2,3,4,5] },
+    shift: { start: 6, end: 15, days: [1,2,3,4,5] },   // Mon–Fri, off Sat+Sun
     totalMinutesToday: 0,
   },
   {
-    id: 'tm003', name: 'Sam Chen',      role: 'Technical Support',
-    initials: 'SC', color: '#f59e0b',
-    status: 'break', checkInTime: null, checkOutTime: null,
-    shift: { start: 12, end: 20, days: [0,1,2,3,4,5,6] },
-    totalMinutesToday: 0,
-  },
-  {
-    id: 'tm004', name: 'Morgan Blake',  role: 'Customer Support',
-    initials: 'MB', color: '#ef4444',
-    status: 'leave', checkInTime: null, checkOutTime: null,
-    shift: { start: 14, end: 22, days: [0,1,2,3,4] },
-    totalMinutesToday: 0,
-  },
-  {
-    id: 'tm005', name: 'Taylor Swift',  role: 'Night Shift Lead',
-    initials: 'TS', color: '#ec4899',
-    status: 'working', checkInTime: null, checkOutTime: null,
-    shift: { start: 0, end: 8, days: [1,2,3,4,5,6] },
-    totalMinutesToday: 0,
-  },
-  {
-    id: 'tm006', name: 'Casey Park',    role: 'Tier 2 Support',
-    initials: 'CP', color: '#06b6d4',
+    id: 'tm002', name: 'Joy',         role: 'Support Engineer',
+    initials: 'JO', color: '#10b981',   // emerald
     status: 'offline', checkInTime: null, checkOutTime: null,
-    shift: { start: 16, end: 24, days: [0,1,2,3,4] },
+    shift: { start: 8, end: 17, days: [0,1,2,3,4] },   // Sun–Thu, off Fri+Sat
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm003', name: 'Saki',        role: 'Support Engineer',
+    initials: 'SK', color: '#8b5cf6',   // violet
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 10, end: 19, days: [1,2,3,4,5] },  // Mon–Fri, off Sat+Sun
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm004', name: 'Atik',        role: 'Support Engineer',
+    initials: 'AT', color: '#f97316',   // orange
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 11, end: 20, days: [0,3,4,5,6] },  // Sun,Wed–Sat, off Mon+Tue
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm005', name: 'Shahariare',  role: 'Support Engineer',
+    initials: 'SH', color: '#ec4899',   // pink
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 11, end: 20, days: [0,1,2,3,4] },  // Sun–Thu, off Fri+Sat
+    totalMinutesToday: 0,
+  },
+  // ── Night shifts ─────────────────────────────────────────────
+  {
+    id: 'tm006', name: 'Musabbir',    role: 'Support Engineer',
+    initials: 'MS', color: '#f59e0b',   // amber
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 16, end: 1, days: [2,3,4,5,6] },   // Tue–Sat, off Sun+Mon
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm007', name: 'Nazirul',     role: 'Support Engineer',
+    initials: 'NZ', color: '#06b6d4',   // cyan
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 18, end: 3, days: [1,2,3,4,5] },   // Mon–Fri, off Sat+Sun
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm008', name: 'Sakib',       role: 'Support Engineer',
+    initials: 'SB', color: '#ef4444',   // red
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 19, end: 4, days: [1,2,3,4,5] },   // Mon–Fri, off Sat+Sun
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm009', name: 'Mahir',       role: 'Support Engineer',
+    initials: 'MH', color: '#a78bfa',   // light purple
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 20, end: 5, days: [0,1,2,3,4] },   // Sun–Thu, off Fri+Sat
+    totalMinutesToday: 0,
+  },
+  {
+    id: 'tm010', name: 'Emon',        role: 'Support Engineer',
+    initials: 'EM', color: '#14b8a6',   // teal
+    status: 'offline', checkInTime: null, checkOutTime: null,
+    shift: { start: 21, end: 6, days: [1,2,3,4,5] },   // Mon–Fri, off Sat+Sun
     totalMinutesToday: 0,
   },
 ];
@@ -93,17 +136,23 @@ const STATE = {
   checkinAction:   'checkin',
   addMemberDays:   [1,2,3,4,5],
   addMemberColor:  '#6366f1',
+  editMemberDays:  [],
+  editMemberColor: '#6366f1',
+  activityFilter:  '',
+  lastDate:        '',
+  leaves:          [],
 };
 
 /* ─────────────────────────────────────────────────────────────
    4. PERSISTENCE (localStorage)
 ───────────────────────────────────────────────────────────── */
-const STORAGE_KEYS = { team: 'stt_team', activities: 'stt_activities', config: 'stt_config' };
+const STORAGE_KEYS = { team: 'stt_team', activities: 'stt_activities', config: 'stt_config', leaves: 'stt_leaves' };
 
 function saveState() {
   localStorage.setItem(STORAGE_KEYS.team,       JSON.stringify(STATE.team));
   localStorage.setItem(STORAGE_KEYS.activities, JSON.stringify(STATE.activities));
   localStorage.setItem(STORAGE_KEYS.config,     JSON.stringify(CONFIG));
+  localStorage.setItem(STORAGE_KEYS.leaves,     JSON.stringify(STATE.leaves));
 }
 
 function loadState() {
@@ -114,6 +163,9 @@ function loadState() {
     const acts = localStorage.getItem(STORAGE_KEYS.activities);
     STATE.activities = acts ? JSON.parse(acts) : [];
 
+    const lvs = localStorage.getItem(STORAGE_KEYS.leaves);
+    STATE.leaves = lvs ? JSON.parse(lvs) : [];
+
     const cfg = localStorage.getItem(STORAGE_KEYS.config);
     if (cfg) {
       const saved = JSON.parse(cfg);
@@ -123,6 +175,7 @@ function loadState() {
   } catch (e) {
     STATE.team       = JSON.parse(JSON.stringify(DEFAULT_TEAM));
     STATE.activities = [];
+    STATE.leaves     = [];
   }
 }
 
@@ -176,7 +229,7 @@ const Discord = {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      showToast('Discord notification sent', 'success');
+      else showToast('Discord notification sent', 'success');
     } catch (err) {
       console.warn('Discord notification failed:', err.message);
     }
@@ -278,7 +331,22 @@ function getMember(id) { return STATE.team.find(m => m.id === id); }
 function formatTime(date) {
   if (!date) return '—';
   const d = date instanceof Date ? date : new Date(date);
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+// Convert a 0-23 shift hour to "6:00 AM" / "3:00 PM" etc.
+function formatHour(h) {
+  const hour = h % 24;
+  if (hour === 0)  return '12:00 AM';
+  if (hour === 12) return '12:00 PM';
+  return hour < 12 ? `${hour}:00 AM` : `${hour - 12}:00 PM`;
+}
+
+// Compact label for the 24-column timeline header: "12a", "6a", "12p", "6p"
+function formatHourLabel(h) {
+  if (h === 0)  return '12a';
+  if (h === 12) return '12p';
+  return h < 12 ? `${h}a` : `${h - 12}p`;
 }
 
 function formatDuration(minutes) {
@@ -402,10 +470,10 @@ function renderDashboard() {
     const checkinStr = m.checkInTime ? formatTime(m.checkInTime) : '—';
     return `
       <div class="quick-member" onclick="openCheckinModal('${m.id}')">
-        <div class="member-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}aa)">${m.initials}</div>
+        <div class="member-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}aa)">${escHtml(m.initials)}</div>
         <div class="member-name-info">
-          <div class="name">${m.name}</div>
-          <div class="role">${m.role}</div>
+          <div class="name">${escHtml(m.name)}</div>
+          <div class="role">${escHtml(m.role)}</div>
         </div>
         <div class="member-time-info">
           <div class="checkin-time">${checkinStr}</div>
@@ -417,16 +485,29 @@ function renderDashboard() {
 }
 
 function renderActivityFeed() {
+  // Populate member filter select, preserving current selection
+  const filterSel = document.getElementById('activityMemberFilter');
+  if (filterSel) {
+    const cur = filterSel.value;
+    filterSel.innerHTML = '<option value="">All members</option>' +
+      STATE.team.map(m => `<option value="${m.id}"${m.id === cur ? ' selected' : ''}>${escHtml(m.name)}</option>`).join('');
+    STATE.activityFilter = filterSel.value;
+  }
+
   const list = document.getElementById('activityList');
-  if (!STATE.activities.length) {
+  const acts = STATE.activityFilter
+    ? STATE.activities.filter(a => a.memberId === STATE.activityFilter)
+    : STATE.activities;
+
+  if (!acts.length) {
     list.innerHTML = '<div class="empty-state">No activity yet today</div>';
     return;
   }
   const labels = { checkin: 'checked in', checkout: 'checked out', break: 'went on break', leave: 'is on leave', added: 'was added to the team' };
-  list.innerHTML = STATE.activities.slice(0, 30).map(a => `
+  list.innerHTML = acts.slice(0, 30).map(a => `
     <div class="activity-item">
       <div class="activity-dot ${a.action}"></div>
-      <div class="activity-text"><strong>${a.memberName}</strong> ${labels[a.action] || a.action}${a.note ? ` — ${a.note}` : ''}</div>
+      <div class="activity-text"><strong>${escHtml(a.memberName)}</strong> ${labels[a.action] || escHtml(a.action)}${a.note ? ` — ${escHtml(a.note)}` : ''}</div>
       <span class="activity-time">${a.timeStr}</span>
     </div>`).join('');
 }
@@ -446,9 +527,9 @@ function renderTimeline() {
   const fmt = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   dateLabel.textContent = isToday ? 'Today' : fmt.format(STATE.timelineDate);
 
-  // Hour labels
+  // Hour labels (12-hour format, starting from TIMELINE_START_HOUR)
   hourLabels.innerHTML = Array.from({length: 24}, (_, i) =>
-    `<div class="tl-hour-label">${String(i).padStart(2,'0')}</div>`
+    `<div class="tl-hour-label">${formatHourLabel((i + TIMELINE_START_HOUR) % 24)}</div>`
   ).join('');
 
   // Member rows + track rows
@@ -458,16 +539,26 @@ function renderTimeline() {
   tracks.innerHTML = '';
   tracks.appendChild(timeIndicator);
 
+  // Helper: convert absolute hour to % left in the TIMELINE_START_HOUR-based view
+  const S = TIMELINE_START_HOUR;
+  const tlPct = (h) => (((h - S + 24) % 24) / 24) * 100;
+
   STATE.team.forEach(m => {
-    // Member label
+    const tlDateStr = dateKey(STATE.timelineDate);
+    const hasLeave  = STATE.leaves.some(l => l.memberId === m.id && l.date === tlDateStr);
+
+    // Member label — includes a quick leave-toggle button
     const labelDiv = document.createElement('div');
     labelDiv.className = 'tl-member-row-label';
     labelDiv.innerHTML = `
-      <div class="member-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}bb)">${m.initials}</div>
-      <div>
-        <div class="tl-name">${m.name}</div>
-        <div class="tl-role">${m.role}</div>
-      </div>`;
+      <div class="member-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}bb)">${escHtml(m.initials)}</div>
+      <div class="tl-label-text">
+        <div class="tl-name">${escHtml(m.name)}</div>
+        <div class="tl-role">${escHtml(m.role)}</div>
+      </div>
+      <button class="tl-leave-btn${hasLeave ? ' active' : ''}" title="${hasLeave ? 'Remove leave' : 'Mark on leave'}" data-member-id="${escHtml(m.id)}" data-date="${escHtml(tlDateStr)}">
+        ${hasLeave ? '✕ Leave' : '+ Leave'}
+      </button>`;
     memberLabels.appendChild(labelDiv);
 
     // Track row
@@ -485,35 +576,81 @@ function renderTimeline() {
     const isWorkDay = m.shift.days.includes(dayOfWeek);
 
     if (isWorkDay) {
-      // Scheduled shift block (dashed/ghost)
-      const sBlock = document.createElement('div');
-      sBlock.className = 'tl-shift-block scheduled';
-      const sStart = (m.shift.start / 24) * 100;
-      const sDur   = ((m.shift.end - m.shift.start) / 24) * 100;
-      sBlock.style.left  = `${sStart}%`;
-      sBlock.style.width = `${sDur}%`;
-      sBlock.title = `Scheduled: ${String(m.shift.start).padStart(2,'0')}:00 – ${String(m.shift.end % 24 || 24).padStart(2,'0')}:00`;
-      row.appendChild(sBlock);
+      // Duration in hours (handles overnight)
+      const durationH = m.shift.end < m.shift.start
+        ? (24 - m.shift.start + m.shift.end)
+        : (m.shift.end - m.shift.start);
 
-      // Actual worked block (if checked in)
+      // Position in the 6am-based view
+      const startPct = tlPct(m.shift.start);
+      const widthPct = (durationH / 24) * 100;
+      const endPct   = startPct + widthPct;
+
+      const shiftLabel  = `${m.name}  ·  ${formatHour(m.shift.start)} – ${formatHour(m.shift.end)}`;
+      const applyShiftStyle = (el) => {
+        el.style.background  = `linear-gradient(90deg, ${m.color}66, ${m.color}3a)`;
+        el.style.borderColor = `${m.color}dd`;
+        el.style.boxShadow   = `inset 3px 0 0 ${m.color}, 0 2px 10px ${m.color}40`;
+        el.style.color       = 'rgba(255,255,255,0.95)';
+        el.style.textShadow  = '0 1px 3px rgba(0,0,0,0.55)';
+      };
+
+      if (endPct <= 100) {
+        // Fits in one block (normal case in 6am–6am view)
+        const sBlock = document.createElement('div');
+        sBlock.className   = 'tl-shift-block scheduled';
+        sBlock.style.left  = `${startPct}%`;
+        sBlock.style.width = `${widthPct}%`;
+        applyShiftStyle(sBlock);
+        sBlock.textContent = shiftLabel;
+        sBlock.title       = escHtml(m.name);
+        row.appendChild(sBlock);
+      } else {
+        // Wraps past the right edge — split into two blocks
+        const w1 = 100 - startPct;
+        const w2 = widthPct - w1;
+        [{ left: startPct, width: w1 }, { left: 0, width: w2 }].forEach(seg => {
+          const b = document.createElement('div');
+          b.className   = 'tl-shift-block scheduled';
+          b.style.left  = `${seg.left}%`;
+          b.style.width = `${seg.width}%`;
+          applyShiftStyle(b);
+          b.textContent = shiftLabel;
+          b.title       = escHtml(m.name);
+          row.appendChild(b);
+        });
+      }
+
+      // Scheduled leave overlay — bright red, full name centered
+      if (hasLeave) {
+        const lb = document.createElement('div');
+        lb.className   = 'tl-shift-block tl-leave-overlay';
+        lb.style.left  = `${startPct}%`;
+        lb.style.width = `${Math.min(widthPct, 100 - startPct)}%`;
+        lb.textContent = `${m.name}  —  ON LEAVE`;
+        lb.title       = `${escHtml(m.name)} — Scheduled Leave`;
+        row.appendChild(lb);
+      }
+
+      // Actual worked block (if checked in today)
       if (m.checkInTime && isToday) {
         const checkInDate = new Date(m.checkInTime);
-        const checkInHour = checkInDate.getHours() + checkInDate.getMinutes() / 60;
+        const checkInH = checkInDate.getHours() + checkInDate.getMinutes() / 60;
 
-        let endHour;
+        let endH;
         if (m.checkOutTime) {
-          const checkOutDate = new Date(m.checkOutTime);
-          endHour = checkOutDate.getHours() + checkOutDate.getMinutes() / 60;
+          const coDate = new Date(m.checkOutTime);
+          endH = coDate.getHours() + coDate.getMinutes() / 60;
         } else {
           const n = now();
-          endHour = n.getHours() + n.getMinutes() / 60;
+          endH = n.getHours() + n.getMinutes() / 60;
         }
 
         const statusColors = { working: m.color, break: '#f59e0b', leave: '#ef4444', offline: '#374151' };
         const aBlock = document.createElement('div');
         aBlock.className = 'tl-shift-block';
-        aBlock.style.left    = `${(checkInHour / 24) * 100}%`;
-        aBlock.style.width   = `${((endHour - checkInHour) / 24) * 100}%`;
+        aBlock.style.left    = `${tlPct(checkInH)}%`;
+        aBlock.style.width   = `${((endH - checkInH) / 24) * 100}%`;
         aBlock.style.background = `linear-gradient(90deg, ${statusColors[m.status] || m.color}cc, ${statusColors[m.status] || m.color}66)`;
         aBlock.style.boxShadow  = `0 2px 8px ${statusColors[m.status] || m.color}44`;
         aBlock.title = `${m.name}: ${formatTime(m.checkInTime)} – ${m.checkOutTime ? formatTime(m.checkOutTime) : 'Now'}`;
@@ -525,10 +662,11 @@ function renderTimeline() {
     tracks.appendChild(row);
   });
 
-  // Current time indicator (only for today)
+  // Current time indicator (only for today, positioned in 6am-based view)
   if (isToday) {
     const n = now();
-    const pct = ((n.getHours() + n.getMinutes() / 60) / 24) * 100;
+    const h = n.getHours() + n.getMinutes() / 60;
+    const pct = (((h - TIMELINE_START_HOUR + 24) % 24) / 24) * 100;
     timeIndicator.style.left    = `${pct}%`;
     timeIndicator.style.display = 'block';
   } else {
@@ -578,18 +716,27 @@ function renderCalendar() {
 function buildCalDay(date, otherMonth, today) {
   const cell = document.createElement('div');
   cell.className = 'cal-day';
-  if (otherMonth)           cell.classList.add('other-month');
+  if (otherMonth)            cell.classList.add('other-month');
   if (isSameDay(date,today)) cell.classList.add('today');
   if (isSameDay(date, STATE.selectedCalDate)) cell.classList.add('selected');
+  const dow = date.getDay();
+  if (dow === 0 || dow === 6) cell.classList.add('weekend');
 
-  const dayOfWeek = date.getDay();
+  const dayOfWeek    = date.getDay();
+  const calDayStr    = dateKey(date);
+  const leavesOnDay  = STATE.leaves.filter(l => l.date === calDayStr);
   const membersWorking = STATE.team.filter(m => m.shift.days.includes(dayOfWeek));
 
-  const dotsHtml = membersWorking.slice(0, 6).map(m =>
-    `<span class="cal-dot" style="background:${m.color}" title="${m.name}"></span>`
-  ).join('');
+  const dotsHtml = membersWorking.slice(0, 6).map(m => {
+    const hasLeave = leavesOnDay.some(l => l.memberId === m.id);
+    return `<span class="cal-dot${hasLeave ? ' cal-dot-leave' : ''}" style="background:${m.color}" title="${escHtml(m.name)}${hasLeave ? ' (On Leave)' : ''}"></span>`;
+  }).join('');
 
-  cell.innerHTML = `<span class="cal-day-num">${date.getDate()}</span><div class="cal-dots">${dotsHtml}</div>`;
+  const leaveBadge = leavesOnDay.length > 0
+    ? `<span class="cal-leave-count">${leavesOnDay.length}L</span>`
+    : '';
+
+  cell.innerHTML = `<span class="cal-day-num">${date.getDate()}</span><div class="cal-dots">${dotsHtml}${leaveBadge}</div>`;
   cell.addEventListener('click', () => selectCalDay(date));
   return cell;
 }
@@ -614,22 +761,67 @@ function renderDayDetail(date) {
     return;
   }
 
+  const calDateStr = dateKey(date);
   list.innerHTML = members.map(m => {
-    const startHr = String(m.shift.start).padStart(2,'0');
-    const endHr   = String(m.shift.end % 24 || 24).padStart(2,'0');
+    const shiftTimeStr = `${formatHour(m.shift.start)} – ${formatHour(m.shift.end)}`;
+    const hasLeave = STATE.leaves.some(l => l.memberId === m.id && l.date === calDateStr);
     const statusBadge = isToday
       ? `<span class="status-badge ${m.status}">${m.status}</span>`
       : '';
+    const leaveBtn = `<button class="btn-leave-toggle${hasLeave ? ' active' : ''}"
+      onclick="toggleLeave('${m.id}','${calDateStr}')">${hasLeave ? '✓ On Leave' : 'Set Leave'}</button>`;
     return `
       <div class="day-shift-item">
-        <div class="day-shift-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}aa)">${m.initials}</div>
+        <div class="day-shift-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}aa)">${escHtml(m.initials)}</div>
         <div class="day-shift-info">
-          <div class="name">${m.name}</div>
-          <div class="time">${startHr}:00 – ${endHr}:00 · ${m.role}</div>
+          <div class="name">${escHtml(m.name)}</div>
+          <div class="time">${shiftTimeStr} · ${escHtml(m.role)}</div>
         </div>
         ${statusBadge}
+        ${leaveBtn}
       </div>`;
   }).join('');
+}
+
+/* Toggle a scheduled leave entry for a member on a given date string (YYYY-MM-DD) */
+function toggleLeave(memberId, dateStr) {
+  const member = getMember(memberId);
+  if (!member) return;
+
+  const idx = STATE.leaves.findIndex(l => l.memberId === memberId && l.date === dateStr);
+  if (idx !== -1) {
+    STATE.leaves.splice(idx, 1);
+    // If this was today and member is on leave, revert to offline
+    if (dateStr === dateKey(new Date()) && member.status === 'leave') {
+      member.status = 'offline';
+    }
+    showToast(`Leave removed for ${member.name}`, 'info');
+  } else {
+    STATE.leaves.push({ id: Date.now(), memberId, memberName: member.name, date: dateStr });
+    // If this is today, apply leave status immediately
+    if (dateStr === dateKey(new Date()) && member.status === 'offline') {
+      member.status = 'leave';
+    }
+    showToast(`${member.name} marked on leave for ${dateStr}`, 'success');
+  }
+
+  saveState();
+  renderCalendar();
+  renderDayDetail(STATE.selectedCalDate);
+  renderTimeline();
+  renderDashboard();
+  renderTeamGrid();
+}
+
+/* Apply any scheduled leaves for today on startup / midnight rollover */
+function applyScheduledLeaves() {
+  const todayStr = dateKey(new Date());
+  STATE.leaves.filter(l => l.date === todayStr).forEach(l => {
+    const member = getMember(l.memberId);
+    if (member && member.status === 'offline') {
+      member.status = 'leave';
+    }
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -648,17 +840,19 @@ function renderTeamGrid() {
   grid.innerHTML = visible.map(m => {
     const minutes    = calcWorkedMinutes(m);
     const checkinStr = m.checkInTime  ? formatTime(m.checkInTime)  : '—';
-    const shiftStr   = `${String(m.shift.start).padStart(2,'0')}:00 – ${String(m.shift.end % 24||24).padStart(2,'0')}:00`;
-    const dayNames   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-    const daysStr    = m.shift.days.map(d => dayNames[d]).join(' ');
+    const shiftStr   = `${formatHour(m.shift.start)} – ${formatHour(m.shift.end)}`;
+    const allDayNames = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+    const daysStr = allDayNames.map((d, i) =>
+      `<span class="day-chip ${m.shift.days.includes(i) ? 'day-on' : 'day-off'}">${d}</span>`
+    ).join('');
 
     return `
       <div class="glass-card member-card" id="card-${m.id}">
         <div class="member-card-top">
-          <div class="member-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}aa);width:48px;height:48px;font-size:.9rem">${m.initials}</div>
+          <div class="member-avatar" style="background:linear-gradient(135deg,${m.color},${m.color}aa);width:48px;height:48px;font-size:.9rem">${escHtml(m.initials)}</div>
           <div class="member-card-meta">
-            <div class="mc-name">${m.name}</div>
-            <div class="mc-role">${m.role}</div>
+            <div class="mc-name">${escHtml(m.name)}</div>
+            <div class="mc-role">${escHtml(m.role)}</div>
           </div>
           <span class="status-badge ${m.status}">${m.status}</span>
         </div>
@@ -669,7 +863,7 @@ function renderTeamGrid() {
           </div>
           <div class="member-stat-item">
             <div class="ms-label">Days</div>
-            <div class="ms-value" style="font-size:.78rem">${daysStr}</div>
+            <div class="ms-value">${daysStr}</div>
           </div>
           <div class="member-stat-item">
             <div class="ms-label">Checked In</div>
@@ -686,12 +880,84 @@ function renderTeamGrid() {
           <button class="btn-status btn-leave   ${m.status==='leave'?'active':''}"   onclick="setStatus('${m.id}','leave')">Leave</button>
           <button class="btn-status btn-checkout" onclick="checkOut('${m.id}')">Check Out</button>
         </div>
+        <div class="member-card-mgmt">
+          <button class="btn-edit-member" onclick="openEditMemberModal('${m.id}')">Edit</button>
+          <button class="btn-remove-member" onclick="removeMember('${m.id}')">Remove</button>
+        </div>
       </div>`;
   }).join('');
 }
 
 /* ─────────────────────────────────────────────────────────────
-   14. WORKED MINUTES CALCULATOR
+   14. MEMBER MANAGEMENT — REMOVE / EDIT
+───────────────────────────────────────────────────────────── */
+function removeMember(memberId) {
+  const member = getMember(memberId);
+  if (!member) return;
+  if (!window.confirm(`Remove ${member.name} from the team?`)) return;
+  const idx = STATE.team.findIndex(m => m.id === memberId);
+  if (idx !== -1) STATE.team.splice(idx, 1);
+  saveState();
+  renderAll();
+}
+
+function openEditMemberModal(memberId) {
+  const member = getMember(memberId);
+  if (!member) return;
+
+  STATE.editMemberDays  = [...member.shift.days];
+  STATE.editMemberColor = member.color;
+
+  document.getElementById('editMemberId').value    = member.id;
+  document.getElementById('editMemberName').value  = member.name;
+  document.getElementById('editMemberRole').value  = member.role;
+  document.getElementById('editShiftStart').value  = member.shift.start;
+  document.getElementById('editShiftEnd').value    = member.shift.end;
+
+  document.querySelectorAll('#editDayPicker .day-btn').forEach(btn => {
+    const day = parseInt(btn.dataset.day, 10);
+    btn.classList.toggle('active', STATE.editMemberDays.includes(day));
+  });
+
+  document.querySelectorAll('#editColorPicker .color-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === STATE.editMemberColor);
+  });
+
+  document.getElementById('editMemberOverlay').classList.remove('hidden');
+}
+
+function closeEditMemberModal() {
+  document.getElementById('editMemberOverlay').classList.add('hidden');
+}
+
+function confirmEditMember() {
+  const memberId = document.getElementById('editMemberId').value;
+  const name     = document.getElementById('editMemberName').value.trim();
+  const role     = document.getElementById('editMemberRole').value.trim();
+  const start    = parseInt(document.getElementById('editShiftStart').value, 10);
+  const end      = parseInt(document.getElementById('editShiftEnd').value, 10);
+
+  if (!name || !role) { showToast('Please fill in name and role', 'warning'); return; }
+  if (isNaN(start) || isNaN(end) || start === end) { showToast('Invalid shift hours', 'warning'); return; }
+
+  const member = getMember(memberId);
+  if (!member) return;
+
+  member.name     = name;
+  member.role     = role;
+  member.initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+  member.color    = STATE.editMemberColor;
+  member.shift    = { start, end, days: [...STATE.editMemberDays] };
+
+  if (STATE.firebaseDB) Firebase.updateMember(member);
+  saveState();
+  renderAll();
+  closeEditMemberModal();
+  showToast(`${name} updated`, 'success');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   14b. WORKED MINUTES CALCULATOR
 ───────────────────────────────────────────────────────────── */
 function calcWorkedMinutes(member) {
   let total = member.totalMinutesToday || 0;
@@ -721,8 +987,9 @@ function loadSettingsUI() {
   document.getElementById('fbAuthDomain').value       = CONFIG.firebase.authDomain || '';
   document.getElementById('fbDatabaseURL').value      = CONFIG.firebase.databaseURL || '';
   document.getElementById('fbProjectId').value        = CONFIG.firebase.projectId || '';
-  document.getElementById('fbStorageBucket').value    = CONFIG.firebase.storageBucket || '';
-  document.getElementById('fbAppId').value            = CONFIG.firebase.appId || '';
+  document.getElementById('fbStorageBucket').value        = CONFIG.firebase.storageBucket || '';
+  document.getElementById('fbMessagingSenderId').value    = CONFIG.firebase.messagingSenderId || '';
+  document.getElementById('fbAppId').value                = CONFIG.firebase.appId || '';
 }
 
 function saveDiscordSettings() {
@@ -743,8 +1010,9 @@ function saveFirebaseSettings() {
   CONFIG.firebase.authDomain       = document.getElementById('fbAuthDomain').value.trim();
   CONFIG.firebase.databaseURL      = document.getElementById('fbDatabaseURL').value.trim();
   CONFIG.firebase.projectId        = document.getElementById('fbProjectId').value.trim();
-  CONFIG.firebase.storageBucket    = document.getElementById('fbStorageBucket').value.trim();
-  CONFIG.firebase.appId            = document.getElementById('fbAppId').value.trim();
+  CONFIG.firebase.storageBucket      = document.getElementById('fbStorageBucket').value.trim();
+  CONFIG.firebase.messagingSenderId  = document.getElementById('fbMessagingSenderId').value.trim();
+  CONFIG.firebase.appId              = document.getElementById('fbAppId').value.trim();
   saveState();
   if (CONFIG.firebase.enabled) Firebase.init();
   else showToast('Firebase settings saved (disabled)', 'info');
@@ -755,6 +1023,7 @@ function saveFirebaseSettings() {
 ───────────────────────────────────────────────────────────── */
 function renderAll() {
   renderDashboard();
+  renderActivityFeed();
   renderTimeline();
   renderCalendar();
   renderTeamGrid();
@@ -769,7 +1038,7 @@ function populateCheckinSelect() {
   const sel = document.getElementById('checkinMemberSelect');
   const cur = sel.value;
   sel.innerHTML = '<option value="">Select a member...</option>' +
-    STATE.team.map(m => `<option value="${m.id}" ${m.id===cur?'selected':''}>${m.name} — ${m.status}</option>`).join('');
+    STATE.team.map(m => `<option value="${m.id}" ${m.id===cur?'selected':''}>${escHtml(m.name)} — ${m.status}</option>`).join('');
 }
 
 function openCheckinModal(memberId = '') {
@@ -828,6 +1097,14 @@ function openAddMemberModal() {
   document.getElementById('newMemberRole').value  = '';
   document.getElementById('newShiftStart').value  = '9';
   document.getElementById('newShiftEnd').value    = '17';
+  // Sync day picker buttons to default Mon–Fri
+  document.querySelectorAll('#dayPicker .day-btn').forEach(btn => {
+    btn.classList.toggle('active', [1,2,3,4,5].includes(parseInt(btn.dataset.day, 10)));
+  });
+  // Sync color picker to default indigo
+  document.querySelectorAll('#colorPicker .color-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.color === '#6366f1');
+  });
 }
 
 function closeAddMemberModal() {
@@ -841,7 +1118,7 @@ function confirmAddMember() {
   const end   = parseInt(document.getElementById('newShiftEnd').value, 10);
 
   if (!name || !role) { showToast('Please fill in name and role', 'warning'); return; }
-  if (isNaN(start) || isNaN(end) || start >= end) { showToast('Invalid shift hours', 'warning'); return; }
+  if (isNaN(start) || isNaN(end) || start === end) { showToast('Invalid shift hours', 'warning'); return; }
 
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
   const member = {
@@ -928,15 +1205,67 @@ function showToast(message, type = 'info', duration = 3500) {
 /* ─────────────────────────────────────────────────────────────
    21. LIVE CLOCK
 ───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   AUTO CHECK-IN / CHECK-OUT
+   Runs once per minute. Checks each member's shift start/end
+   against the current hour and updates status automatically.
+───────────────────────────────────────────────────────────── */
+function autoCheckShifts() {
+  const n   = new Date();
+  const h   = n.getHours();
+  const dow = n.getDay();
+
+  STATE.team.forEach(member => {
+    // Skip if today is not a scheduled work day
+    if (!member.shift.days.includes(dow)) return;
+    // Skip members on scheduled leave
+    if (member.status === 'leave') return;
+
+    // Auto check-in when shift start hour is reached
+    if (h === member.shift.start && member.status === 'offline') {
+      checkIn(member.id, 'Auto check-in');
+    }
+
+    // Auto check-out when shift end hour is reached
+    const endH = member.shift.end % 24;
+    if (h === endH && (member.status === 'working' || member.status === 'break')) {
+      checkOut(member.id, 'Auto check-out');
+    }
+  });
+}
+
 function updateClock() {
   const n   = new Date();
-  const timeStr = n.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const timeStr = n.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   const dateStr = n.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   document.getElementById('liveClock').textContent = timeStr;
   document.getElementById('liveDate').textContent  = dateStr;
 
-  // Update timeline indicator every minute
+  // Midnight reset: if the calendar day has rolled over, clear offline member state
+  const todayKey = dateKey(n);
+  if (STATE.lastDate && STATE.lastDate !== todayKey) {
+    STATE.team.forEach(member => {
+      if (member.status === 'offline') {
+        member.totalMinutesToday = 0;
+        member.checkInTime       = null;
+        member.checkOutTime      = null;
+      }
+    });
+    applyScheduledLeaves();
+    saveState();
+    renderAll();
+  }
+  STATE.lastDate = todayKey;
+
+  // Auto check-in / check-out once per minute
+  const currentMinute = n.getHours() * 60 + n.getMinutes();
+  if (currentMinute !== _lastAutoCheckMinute) {
+    _lastAutoCheckMinute = currentMinute;
+    autoCheckShifts();
+  }
+
+  // Update timeline indicator every tick
   const indicator = document.getElementById('tlCurrentTime');
   if (indicator && isSameDay(STATE.timelineDate, n)) {
     const pct = ((n.getHours() + n.getMinutes() / 60) / 24) * 100;
@@ -1032,8 +1361,8 @@ function bindEvents() {
     if (e.target === e.currentTarget) closeAddMemberModal();
   });
 
-  // Day picker in add modal
-  document.querySelectorAll('.day-btn').forEach(btn => {
+  // Day picker in add modal (scoped to #dayPicker only)
+  document.querySelectorAll('#dayPicker .day-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const day = parseInt(btn.dataset.day, 10);
       btn.classList.toggle('active');
@@ -1045,10 +1374,10 @@ function bindEvents() {
     });
   });
 
-  // Color picker in add modal
-  document.querySelectorAll('.color-btn').forEach(btn => {
+  // Color picker in add modal (scoped to #colorPicker only)
+  document.querySelectorAll('#colorPicker .color-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#colorPicker .color-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       STATE.addMemberColor = btn.dataset.color;
     });
@@ -1072,6 +1401,13 @@ function bindEvents() {
   document.getElementById('tl-next-day').addEventListener('click', () => {
     STATE.timelineDate.setDate(STATE.timelineDate.getDate() + 1);
     renderTimeline();
+  });
+
+  // Timeline leave-toggle buttons (event delegation)
+  document.getElementById('tlMemberLabels').addEventListener('click', e => {
+    const btn = e.target.closest('.tl-leave-btn');
+    if (!btn) return;
+    toggleLeave(btn.dataset.memberId, btn.dataset.date);
   });
 
   // Calendar navigation
@@ -1106,6 +1442,42 @@ function bindEvents() {
     saveState();
     renderActivityFeed();
   });
+
+  // Activity member filter
+  document.getElementById('activityMemberFilter').addEventListener('change', (e) => {
+    STATE.activityFilter = e.target.value;
+    renderActivityFeed();
+  });
+
+  // Edit member modal
+  document.getElementById('closeEditMemberModal').addEventListener('click', closeEditMemberModal);
+  document.getElementById('cancelEditMemberBtn').addEventListener('click', closeEditMemberModal);
+  document.getElementById('confirmEditMemberBtn').addEventListener('click', confirmEditMember);
+  document.getElementById('editMemberOverlay').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeEditMemberModal();
+  });
+
+  // Edit day picker
+  document.querySelectorAll('#editDayPicker .day-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const day = parseInt(btn.dataset.day, 10);
+      btn.classList.toggle('active');
+      if (btn.classList.contains('active')) {
+        if (!STATE.editMemberDays.includes(day)) STATE.editMemberDays.push(day);
+      } else {
+        STATE.editMemberDays = STATE.editMemberDays.filter(d => d !== day);
+      }
+    });
+  });
+
+  // Edit color picker
+  document.querySelectorAll('#editColorPicker .color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#editColorPicker .color-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      STATE.editMemberColor = btn.dataset.color;
+    });
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1113,15 +1485,17 @@ function bindEvents() {
 ───────────────────────────────────────────────────────────── */
 function init() {
   loadState();
+  applyScheduledLeaves();  // auto-set leave status for today on startup
   bindEvents();
   updateClock();
   setInterval(updateClock, 1000);
 
-  // Auto-refresh timeline & worked hours every 60s
+  // Auto-refresh worked-hours displays every 30s
   setInterval(() => {
     if (STATE.currentSection === 'dashboard') renderDashboard();
     if (STATE.currentSection === 'timeline')  renderTimeline();
-  }, 60000);
+    if (STATE.currentSection === 'team')      renderTeamGrid();
+  }, 30000);
 
   // Initial render
   renderAll();
