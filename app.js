@@ -5,6 +5,42 @@
 
 'use strict';
 
+/* ─────────────────────────────────────────────────────────────
+   LICENSE GATE
+   Requires config.js (gitignored) to define APP_LICENSE_KEY.
+   Without the correct key the app renders a locked screen.
+───────────────────────────────────────────────────────────── */
+(function licenseGate() {
+  const EXPECTED = 'STT-RAKIB-2026-PRIVATE';
+  const ok = typeof APP_LICENSE_KEY !== 'undefined' && APP_LICENSE_KEY === EXPECTED;
+  if (ok) return;
+
+  // Replace page content with a locked screen
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.innerHTML = `
+      <div style="
+        min-height:100vh; display:flex; flex-direction:column;
+        align-items:center; justify-content:center;
+        background:#0f172a; font-family:system-ui,sans-serif; color:#94a3b8;
+        text-align:center; padding:40px;">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="margin-bottom:24px">
+          <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <h1 style="font-size:1.5rem;font-weight:700;color:#f1f5f9;margin:0 0 12px">Not Authorized</h1>
+        <p style="max-width:360px;line-height:1.6;margin:0 0 8px">
+          This application is proprietary software.<br>
+          A valid <code style="color:#f59e0b">config.js</code> license key is required to run it.
+        </p>
+        <p style="font-size:0.8rem;color:#475569;margin-top:20px">
+          &copy; ${new Date().getFullYear()} Rakib &mdash; All Rights Reserved
+        </p>
+      </div>`;
+  });
+
+  // Stop all further script execution
+  throw new Error('Unauthorized: missing or invalid license key.');
+}());
+
 // Tracks the last minute autoCheckShifts ran — avoids firing more than once per minute
 let _lastAutoCheckMinute = -1;
 

@@ -1,0 +1,5 @@
+# Local license key — never commit this
+config.js
+
+# Claude Code memory
+.claude/

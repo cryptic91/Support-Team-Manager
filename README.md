@@ -138,4 +138,6 @@ Requires `backdrop-filter` support: Chrome 76+, Edge 79+, Firefox 103+, Safari 1
 
 ## License
 
-MIT — free for personal and commercial use.
+Copyright &copy; 2026 Rakib. All Rights Reserved.
+
+This software and its source code are proprietary. Viewing the source is permitted, but copying, modifying, distributing, or running the application without a valid `config.js` license key is strictly prohibited. See `LICENSE` for full terms.
