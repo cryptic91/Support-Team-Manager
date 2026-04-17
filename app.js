@@ -1246,6 +1246,18 @@ function showToast(message, type = 'info', duration = 3500) {
    Runs once per minute. Checks each member's shift start/end
    against the current hour and updates status automatically.
 ───────────────────────────────────────────────────────────── */
+// Returns true if the given hour h falls inside a member's shift window.
+// Handles overnight shifts (end < start) correctly.
+function isShiftActive(member, h) {
+  const { start, end } = member.shift;
+  if (end < start) {
+    // Overnight: active from start → midnight → end (e.g. 19→0→4)
+    return h >= start || h < end;
+  }
+  // Normal: active from start up to (but not including) end
+  return h >= start && h < end;
+}
+
 function autoCheckShifts() {
   const n   = new Date();
   const h   = n.getHours();
@@ -1257,15 +1269,16 @@ function autoCheckShifts() {
     // Skip members on scheduled leave
     if (member.status === 'leave') return;
 
-    // Auto check-in when shift start hour is reached
-    if (h === member.shift.start && member.status === 'offline') {
-      checkIn(member.id, 'Auto check-in');
-    }
-
-    // Auto check-out when shift end hour is reached
-    const endH = member.shift.end % 24;
-    if (h === endH && (member.status === 'working' || member.status === 'break')) {
-      checkOut(member.id, 'Auto check-out');
+    if (isShiftActive(member, h)) {
+      // Shift is currently in progress — check in if still offline (catches missed start)
+      if (member.status === 'offline') {
+        checkIn(member.id, 'Auto check-in');
+      }
+    } else {
+      // Shift has ended — check out if still marked as working or on break
+      if (member.status === 'working' || member.status === 'break') {
+        checkOut(member.id, 'Auto check-out');
+      }
     }
   });
 }
@@ -1522,6 +1535,7 @@ function bindEvents() {
 function init() {
   loadState();
   applyScheduledLeaves();  // auto-set leave status for today on startup
+  autoCheckShifts();       // check in/out anyone whose shift is already active on load
   bindEvents();
   updateClock();
   setInterval(updateClock, 1000);
