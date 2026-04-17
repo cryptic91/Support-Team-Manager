@@ -549,7 +549,8 @@ svg { display: block; flex-shrink: 0; }
 .tl-hour-label {
   font-size: 0.65rem;
   color: var(--text-muted);
-  text-align: center;
+  text-align: left;
+  padding-left: 3px;
   line-height: 36px;
   border-left: 1px solid rgba(255,255,255,0.03);
 }

@@ -698,8 +698,11 @@ function renderTimeline() {
     tracks.appendChild(row);
   });
 
-  // Current time indicator (only for today, positioned in 6am-based view)
-  if (isToday) {
+  // Current time indicator — show on any date whose 6am→6am window contains right now
+  const nowMs     = now().getTime();
+  const winStart  = new Date(STATE.timelineDate); winStart.setHours(TIMELINE_START_HOUR, 0, 0, 0);
+  const winEnd    = new Date(winStart); winEnd.setDate(winEnd.getDate() + 1);
+  if (nowMs >= winStart.getTime() && nowMs < winEnd.getTime()) {
     const n = now();
     const h = n.getHours() + n.getMinutes() / 60;
     const pct = (((h - TIMELINE_START_HOUR + 24) % 24) / 24) * 100;
@@ -1264,9 +1267,16 @@ function autoCheckShifts() {
   const dow = n.getDay();
 
   STATE.team.forEach(member => {
-    // Skip if today is not a scheduled work day
-    if (!member.shift.days.includes(dow)) return;
-    // Skip members on scheduled leave
+    const { start, end } = member.shift;
+    const isOvernight = end < start;
+
+    // For an overnight shift in the after-midnight window (h < end), the shift
+    // started yesterday — compare against yesterday's day-of-week, not today's.
+    const effectiveDow = (isOvernight && h < end)
+      ? (dow + 6) % 7   // yesterday
+      : dow;
+
+    if (!member.shift.days.includes(effectiveDow)) return;
     if (member.status === 'leave') return;
 
     if (isShiftActive(member, h)) {
@@ -1314,11 +1324,18 @@ function updateClock() {
     autoCheckShifts();
   }
 
-  // Update timeline indicator every tick
+  // Update timeline indicator every tick — visible on any date whose 6am→6am window contains now
   const indicator = document.getElementById('tlCurrentTime');
-  if (indicator && isSameDay(STATE.timelineDate, n)) {
-    const pct = ((n.getHours() + n.getMinutes() / 60) / 24) * 100;
-    indicator.style.left = `${pct}%`;
+  if (indicator) {
+    const winStart = new Date(STATE.timelineDate); winStart.setHours(TIMELINE_START_HOUR, 0, 0, 0);
+    const winEnd   = new Date(winStart); winEnd.setDate(winEnd.getDate() + 1);
+    if (n.getTime() >= winStart.getTime() && n.getTime() < winEnd.getTime()) {
+      const pct = (((n.getHours() + n.getMinutes() / 60 - TIMELINE_START_HOUR + 24) % 24) / 24) * 100;
+      indicator.style.left    = `${pct}%`;
+      indicator.style.display = 'block';
+    } else {
+      indicator.style.display = 'none';
+    }
   }
 }
 
